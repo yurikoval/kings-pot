@@ -1,27 +1,39 @@
-pragma solidity >=0.8.0 <0.9.0;
+pragma solidity ^0.8.0;
 //SPDX-License-Identifier: MIT
 
-import "hardhat/console.sol";
-// import "@openzeppelin/contracts/access/Ownable.sol"; 
-// https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/Ownable.sol
-
 contract TimedLottery {
+  address payable public lastDonor; // the last person to put into the pot; becomes the winner of the pot
+  uint256 public potSize; // track the size of the pot
+  uint256 public timer; // track the timestamp when timer runs out
+  uint256 public constant timerReset = (24 hours) * 6 * 30; // initial time when the timer reset => timer = now() + timerReset
+  uint256 public constant timerIncrement = 15 minutes; // how much time to add when someone transfers eth into the pot
 
-  event SetPurpose(address sender, string purpose);
-
-  string public purpose = "Building Unstoppable Apps!!!";
-
-  constructor() payable {
-    // what should we do on deploy?
+  constructor() {
+    timer = block.timestamp + timerReset;
   }
 
-  function setPurpose(string memory newPurpose) public payable {
-      purpose = newPurpose;
-      console.log(msg.sender,"set purpose to",purpose);
-      emit SetPurpose(msg.sender, purpose);
+  function fund() external payable {
+    require(msg.value > 0, "funding amount must be greater than 0.");
+    require(block.timestamp < timer, "Funding window is closed.");
+
+    lastDonor = payable(msg.sender);
+    potSize += msg.value;
+    timer += timerIncrement;
   }
 
-  // to support receiving ETH by default
+  function claimPot() external {
+    require(block.timestamp > timer, "Claim window is closed.");
+    require(potSize > 0, "Pot is empty.");
+    require(msg.sender == lastDonor, "Only the winner can claim the potSize.");
+
+    uint256 amount = potSize;
+    potSize = 0;
+    lastDonor.transfer(amount);
+
+    // reset timer
+    timer = block.timestamp + timerReset;
+  }
+
   receive() external payable {}
   fallback() external payable {}
 }
