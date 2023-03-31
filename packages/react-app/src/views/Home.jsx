@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { ethers } from "ethers";
 import { useContractReader } from "eth-hooks";
 import { Button } from "antd";
-import { EtherInput } from "../components";
+import { EtherInput, PotTimer } from "../components";
 
 function Home({ readContracts, tx, writeContracts }) {
   const potSizeBigNumber = useContractReader(readContracts, "TimedLottery", "potSize");
@@ -47,6 +47,7 @@ function Home({ readContracts, tx, writeContracts }) {
       >
         Add to Pot!
       </Button>
+      <PotTimer readContracts={readContracts} />
     </div>
   );
 }
